@@ -6,86 +6,207 @@ const nextContext = nextCanvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const levelElement = document.getElementById('level');
 const finalScoreElement = document.getElementById('final-score');
+const sidePanelElements = document.querySelector('.side-panel');
 
 const menuOverlay = document.getElementById('menu');
 const gameOverOverlay = document.getElementById('game-over');
+const pauseMenuOverlay = document.getElementById('pause-menu');
+const rulesOverlay = document.getElementById('rules');
+const countdownOverlay = document.getElementById('countdown');
+const countdownText = document.getElementById('countdown-text');
+const pauseBtn = document.getElementById('btn-pause');
 
 context.scale(20, 20);
 nextContext.scale(20, 20);
 
-// --- НАЛАШТУВАННЯ ГРИ ---
 let dropCounter = 0;
 let dropInterval = 1000;
 let lastTime = 0;
 let gameRunning = false; 
+let isPaused = false;     
 let isAnimating = false; 
-let difficultyMultiplier = 1; // Множник очок
-let currentDifficulty = 'medium'; // Поточна складність
+let isCountdown = false; 
+let difficultyMultiplier = 1;
+let currentDifficulty = 'medium';
+const MIN_DROP_INTERVAL = 100;
 
-const MIN_DROP_INTERVAL = 100; // Максимальна швидкість (100мс)
+let countdownTimer = null; 
 
-// Кольори (9-й колір - білий для анімації)
 const colors = [
-    null,
-    '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', 
+    null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', 
     '#FF8E0D', '#FFE138', '#3877FF', '#FFFFFF' 
 ];
 
-// --- УПРАВЛІННЯ МЕНЮ ---
+function startSequence(difficulty) {
+    currentDifficulty = difficulty;    
+   
+    isPaused = false;       
+    isAnimating = false;    
+    gameRunning = false;    
+    
+    // Hiding all overlays
+    menuOverlay.classList.add('hidden');
+    gameOverOverlay.classList.add('hidden');
+    pauseMenuOverlay.classList.add('hidden');
+    pauseBtn.classList.add('hidden'); 
 
-function startGame(difficulty) {
-    currentDifficulty = difficulty; // Запам'ятовуємо вибір!
-
-    if (difficulty === 'easy') {
-        dropInterval = 1000;
-        difficultyMultiplier = 1;
-    } else if (difficulty === 'medium') {
-        dropInterval = 700;
-        difficultyMultiplier = 1.5;
-    } else if (difficulty === 'hard') {
-        dropInterval = 400;
-        difficultyMultiplier = 2;
-    }
-
+    setupDifficulty(difficulty);
+    
+    // Clearing arena and score
     arena.forEach(row => row.fill(0));
     player.score = 0;
     updateScore();
+
+    // Resetting player and next piece
+    player.matrix = null;
+    nextPiece = null; 
+
+    // Hiding side panel during countdown
+    sidePanelElements.classList.add('invisible');
+
+    draw(); 
+
+    // Starting countdown for new game
+    runCountdown(true); 
+}
+
+function setupDifficulty(difficulty) {
+    if (difficulty === 'easy') {
+        dropInterval = 1000; 
+        difficultyMultiplier = 1;
+    } else if (difficulty === 'medium') {
+        dropInterval = 700; 
+        difficultyMultiplier = 1.5;
+    } else if (difficulty === 'hard') {
+        dropInterval = 400; 
+        difficultyMultiplier = 2;
+    }
+}
+
+function runCountdown(isNewGame = false) {
     
-    menuOverlay.classList.add('hidden');
-    gameOverOverlay.classList.add('hidden');
+    if (countdownTimer) 
+        clearInterval(countdownTimer);
+
+    isCountdown = true; 
+    gameRunning = true; 
+    isPaused = true;    
     
-    gameRunning = true;
-    nextPiece = getRandomPiece(); // Генеруємо нову фігуру при старті
-    playerReset();
-    update();
+    countdownOverlay.classList.remove('hidden');
+    pauseBtn.classList.add('hidden'); 
+    
+    let count = 3;
+    countdownText.innerText = count;
+
+    countdownTimer = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownText.innerText = count;
+        } else if (count === 0) {
+            countdownText.innerText = "GO!";            
+            
+            if (isNewGame) {
+                nextPiece = getRandomPiece(); 
+                playerReset();                
+            }
+        } else {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            
+            countdownOverlay.classList.add('hidden');
+            pauseBtn.classList.remove('hidden');                    
+            sidePanelElements.classList.remove('invisible');
+
+            isCountdown = false;
+            isPaused = false;           
+            // Resume game loop
+            lastTime = performance.now(); 
+            update();
+        }
+    }, 1000);
+}
+
+pauseBtn.addEventListener('click', () => {
+    if (gameRunning && !isAnimating && !isCountdown) {
+        togglePause();
+    }
+});
+
+function togglePause() {
+    isPaused = !isPaused;
+    if (isPaused) {
+        pauseMenuOverlay.classList.remove('hidden');
+        pauseBtn.classList.add('hidden');
+        sidePanelElements.classList.add('invisible'); 
+    } else {
+        resumeGame();
+    }
+}
+
+function resumeGame() {
+    isPaused = false;
+    pauseMenuOverlay.classList.add('hidden');    
+    runCountdown(false); 
+}
+
+function restartGame() {
+    startSequence(currentDifficulty);
 }
 
 function resetToMenu() {
     gameRunning = false;
+    isPaused = false;
+    isCountdown = false;
+    isAnimating = false;
+    
+    // Clearing countdown timer if active
+    if (countdownTimer) 
+        clearInterval(countdownTimer);
+
+    countdownOverlay.classList.add('hidden');    
     gameOverOverlay.classList.add('hidden');
+    pauseMenuOverlay.classList.add('hidden');
     menuOverlay.classList.remove('hidden');
-    
-    arena.forEach(row => row.fill(0)); // Чистимо стакан
-    player.matrix = null; // Прибираємо гравця
-    nextPiece = null; // Прибираємо наступну фігуру
-    
+    pauseBtn.classList.add('hidden'); 
+
+    arena.forEach(row => row.fill(0));
+    player.matrix = null;
+    nextPiece = null;
     player.score = 0;
-    updateScore();
+    
+    sidePanelElements.classList.add('invisible');
 
-    draw(); // Перемальовуємо все (тепер буде чорна порожнеча)
+    draw();
 }
 
-function restartGame() {    
-    startGame(currentDifficulty); 
-}
+function openRules() { rulesOverlay.classList.remove('hidden'); }
+function closeRules() { rulesOverlay.classList.add('hidden'); }
 
-function showGameOver() {
-    gameRunning = false;
-    finalScoreElement.innerText = Math.floor(player.score);
-    gameOverOverlay.classList.remove('hidden');
-}
 
-// --- ФУНКЦІОНАЛ ГРИ ---
+
+function update(time = 0) {
+    if (!gameRunning) 
+        return;
+
+    if (isPaused) {
+        draw(); 
+        requestAnimationFrame(update);
+        return; 
+    }
+
+    const deltaTime = time - lastTime;
+    lastTime = time;
+
+    if (!isAnimating) {
+        dropCounter += deltaTime;
+        if (dropCounter > dropInterval) {
+            playerDrop();
+        }
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
 
 function createPiece(type) {
     if (type === 'I') return [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
@@ -111,40 +232,28 @@ function drawMatrix(matrix, offset, ctx = context) {
 function draw() {
     context.fillStyle = '#000';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    drawMatrix(arena, {x: 0, y: 0});  
+    
+    drawMatrix(arena, {x: 0, y: 0});
 
-    if (player.matrix) { 
-        const ghost = {
-            pos: { ...player.pos }, // Копіюємо позицію (щоб не змінювати реального гравця)
-            matrix: player.matrix   // Беремо ту ж саму форму
-        };
-
-        // Кидаємо тінь вниз до упору
-        while (!collide(arena, ghost)) {
-            ghost.pos.y++;
+    if (player.matrix) {
+        const ghost = { pos: { ...player.pos }, matrix: player.matrix };
+        while (!collide(arena, ghost)) { 
+            ghost.pos.y++; 
         }
-        ghost.pos.y--; // Повертаємо на крок назад (бо цикл зупинився, коли вже відбулося зіткнення)
-
-        // Малюємо тінь прозорою
-        context.globalAlpha = 0.2; // 20% непрозорості
+        ghost.pos.y--; // Move back to last valid position
+        context.globalAlpha = 0.2;
         drawMatrix(ghost.matrix, ghost.pos);
-        context.globalAlpha = 1;   // Повертаємо непрозорість назад для решти гри
-        // ---------------------------
+        context.globalAlpha = 1;
 
-        // 4. Малюємо реального гравця поверх тіні
-        drawMatrix(player.matrix, player.pos);        
+        drawMatrix(player.matrix, player.pos);
     }
-
     drawNext();
 }
 
 function drawNext() {
     nextContext.fillStyle = '#000';
     nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-
-    if (!nextPiece) 
-        return;
-
+    if (!nextPiece) return; 
     const offsetX = (5 - nextPiece.length) / 2;
     const offsetY = (5 - nextPiece.length) / 2;
     drawMatrix(nextPiece, {x: offsetX, y: offsetY}, nextContext);
@@ -152,16 +261,11 @@ function drawNext() {
 
 function updateScore() {
     scoreElement.innerText = Math.floor(player.score);
-    // Показуємо умовний "рівень швидкості" (чим менше інтервал, тим вище число)
     levelElement.innerText = 11 - Math.floor(dropInterval / 100); 
 }
 
-// --- ЛОГІКА АНІМАЦІЇ ТА ВИДАЛЕННЯ ---
-
 function arenaSweep() {
     let rowsToRemove = [];
-    
-    // Шукаємо повні лінії
     outer: for (let y = arena.length - 1; y > 0; --y) {
         for (let x = 0; x < arena[y].length; ++x) {
             if (arena[y][x] === 0) continue outer;
@@ -170,46 +274,28 @@ function arenaSweep() {
     }
 
     if (rowsToRemove.length > 0) {
-        isAnimating = true; // Блокуємо гру
-
-        // 1. Фарбуємо лінії в білий (колір 8)
-        rowsToRemove.forEach(y => {
-            arena[y].fill(8); 
-        });
+        isAnimating = true;
+        rowsToRemove.forEach(y => { arena[y].fill(8); });
         draw(); 
-
-        // 2. Чекаємо, поки гравець побачить спалах
         setTimeout(() => {
             let rowCount = 0;
-            
-            // Проходимо по всій арені. Якщо бачимо білий рядок - видаляємо його.
-            // Важливо йти з самих низів, щоб індекси не збивалися при видаленні.
             for (let y = arena.length - 1; y >= 0; --y) {
-                 // Перевіряємо, чи це наш "білий" рядок (індекс 8)
                  if (arena[y][0] === 8) { 
-                     const row = arena.splice(y, 1)[0].fill(0); // Вирізаємо і очищаємо
-                     arena.unshift(row); // Кладемо порожній зверху
-                     y++; // Оскільки ми видалили рядок, треба перевірити цю координату знову
+                     const row = arena.splice(y, 1)[0].fill(0);
+                     arena.unshift(row);
+                     y++;
                      rowCount++;
                  }
             }
-
-            // Тільки тепер, коли ми точно знаємо rowCount, нараховуємо очки
             if (rowCount > 0) {
                 player.score += rowCount * 10 * difficultyMultiplier * rowCount; 
-                
-                // Прискорення
                 dropInterval = Math.max(dropInterval - 20, MIN_DROP_INTERVAL);
-                
                 updateScore();
             }
-
-            isAnimating = false; // Розблокуємо гру
+            isAnimating = false; 
         }, 300);
     }
 }
-
-// --- СТАНДАРТНА ЛОГІКА ---
 
 function collide(arena, player) {
     const [m, o] = [player.matrix, player.pos];
@@ -239,12 +325,16 @@ function rotate(matrix, dir) {
             [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
         }
     }
-    if (dir > 0) matrix.forEach(row => row.reverse());
-    else matrix.reverse();
+    if (dir > 0) 
+        matrix.forEach(row => row.reverse());
+    else 
+        matrix.reverse();
 }
 
 function playerRotate(dir) {
-    if (isAnimating) return; // Не можна крутити під час анімації
+    if (isAnimating || isPaused || isCountdown) 
+        return; 
+
     const pos = player.pos.x;
     let offset = 1;
     rotate(player.matrix, dir);
@@ -265,36 +355,39 @@ function playerReset() {
     player.pos.y = 0;
     player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
     
-    // Якщо одразу після появи є зіткнення
     if (collide(arena, player)) {
-        player.matrix = null; // Прибираємо фігуру, щоб вона не малювалася
-        showGameOver(); 
+        player.matrix = null; 
+        gameRunning = false;
+        finalScoreElement.innerText = Math.floor(player.score);
+        gameOverOverlay.classList.remove('hidden');
+        pauseBtn.classList.add('hidden');
+        sidePanelElements.classList.add('invisible'); 
     }
 }
 
 function playerDrop() {
-    if (isAnimating) return; // Не падаємо під час анімації
+    if (isAnimating || isPaused || isCountdown) 
+        return; 
 
     player.pos.y++;
     if (collide(arena, player)) {
         player.pos.y--;
         merge(arena, player);
         playerReset();
-        arenaSweep(); // Це викличе анімацію
+        arenaSweep(); 
         dropCounter = 0;
     }
     dropCounter = 0;
 }
 
 function playerMove(dir) {
-    if (isAnimating) return;
+    if (isAnimating || isPaused || isCountdown) return;
     player.pos.x += dir;
     if (collide(arena, player)) {
         player.pos.x -= dir;
     }
 }
 
-// Рандомайзер
 const pieces = 'ILJOTSZ';
 let lastPieceType = null;
 function getRandomPiece() {
@@ -306,45 +399,26 @@ function getRandomPiece() {
     return createPiece(type);
 }
 
-// Ініціалізація змінних
 const arena = [];
-while (arena.length < 20) arena.push(new Array(12).fill(0)); // 12x20
-let nextPiece = getRandomPiece();
+while (arena.length < 20) arena.push(new Array(12).fill(0));
+let nextPiece = null; 
 const player = { pos: {x: 0, y: 0}, matrix: null, score: 0 };
 
-
-// --- ІГРОВИЙ ЦИКЛ ---
-
-function update(time = 0) {
-    if (!gameRunning) {
-        // Якщо гра не йде (меню), все одно викликаємо update, щоб працювала анімація меню (якщо буде)
-        // Але тут просто чекаємо
-        requestAnimationFrame(update);
-        return;
-    }
-
-    const deltaTime = time - lastTime;
-    lastTime = time;
-
-    // Якщо йде анімація знищення ліній - ми НЕ оновлюємо падіння фігури
-    if (!isAnimating) {
-        dropCounter += deltaTime;
-        if (dropCounter > dropInterval) {
-            playerDrop();
-        }
-    }
-
-    draw();
-    requestAnimationFrame(update);
-}
-
 document.addEventListener('keydown', event => {
-    if (!gameRunning || isAnimating) return; // Блокуємо керування
+    if (!gameRunning || isAnimating || isPaused || isCountdown) 
+        return; 
 
-    if (event.key === 'ArrowLeft') playerMove(-1);
-    else if (event.key === 'ArrowRight') playerMove(1);
-    else if (event.key === 'ArrowDown') playerDrop();
-    else if (event.key === 'ArrowUp') playerRotate(1);
+    if (event.key === 'ArrowLeft') 
+        playerMove(-1);
+
+    else if (event.key === 'ArrowRight') 
+        playerMove(1);
+
+    else if (event.key === 'ArrowDown') 
+        playerDrop();
+
+    else if (event.key === 'ArrowUp') 
+        playerRotate(1);
 });
 
 function bindMobileControls() {
@@ -353,35 +427,23 @@ function bindMobileControls() {
     const btnDown = document.getElementById('btn-down');
     const btnRotate = document.getElementById('btn-rotate');
 
-    // Використовуємо 'touchstart' замість 'click' для миттєвої реакції на телефонах
-    // (e.preventDefault() потрібен, щоб не спрацьовував зум або скрол при швидкому натисканні)
-
-    btnLeft.addEventListener('touchstart', (e) => {
+    const handleInput = (action) => (e) => {
         e.preventDefault();
-        if (gameRunning && !isAnimating) playerMove(-1);
-    });
+        if (gameRunning && !isAnimating && !isPaused && !isCountdown) 
+            action();
+    };
 
-    btnRight.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (gameRunning && !isAnimating) playerMove(1);
-    });
+    btnLeft.addEventListener('touchstart', handleInput(() => playerMove(-1)));
+    btnRight.addEventListener('touchstart', handleInput(() => playerMove(1)));
+    btnDown.addEventListener('touchstart', handleInput(() => playerDrop()));
+    btnRotate.addEventListener('touchstart', handleInput(() => playerRotate(1)));
 
-    btnDown.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (gameRunning && !isAnimating) playerDrop();
-    });
-
-    btnRotate.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (gameRunning && !isAnimating) playerRotate(1);
-    });
-
-    // Додаємо дублювання для кліків мишкою (для тестування в браузері в режимі емуляції)
-    btnLeft.addEventListener('mousedown', () => { if (gameRunning && !isAnimating) playerMove(-1); });
-    btnRight.addEventListener('mousedown', () => { if (gameRunning && !isAnimating) playerMove(1); });
-    btnDown.addEventListener('mousedown', () => { if (gameRunning && !isAnimating) playerDrop(); });
-    btnRotate.addEventListener('mousedown', () => { if (gameRunning && !isAnimating) playerRotate(1); });
+    btnLeft.addEventListener('mousedown', () => { if (gameRunning && !isAnimating && !isPaused && !isCountdown) playerMove(-1); });
+    btnRight.addEventListener('mousedown', () => { if (gameRunning && !isAnimating && !isPaused && !isCountdown) playerMove(1); });
+    btnDown.addEventListener('mousedown', () => { if (gameRunning && !isAnimating && !isPaused && !isCountdown) playerDrop(); });
+    btnRotate.addEventListener('mousedown', () => { if (gameRunning && !isAnimating && !isPaused && !isCountdown) playerRotate(1); });
 }
 
 bindMobileControls();
-update();
+sidePanelElements.classList.add('invisible'); 
+draw();
