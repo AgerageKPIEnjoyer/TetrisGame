@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tetris JS</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="game-container">
+            <canvas id="tetris" width="240" height="400"></canvas>           
+                
+            <div id="menu" class="overlay">
+                <h1>TETRIS</h1>
+                <p>Select Difficulty:</p>
+                <button onclick="startGame('easy')">EASY</button>
+                <button onclick="startGame('medium')">MEDIUM</button>
+                <button onclick="startGame('hard')">HARD</button>
+            </div>
+
+            <div id="game-over" class="overlay hidden">
+                <h1>GAME OVER</h1>
+                <p>Score: <span id="final-score">0</span></p>
+                <button onclick="resetToMenu()">MAIN MENU</button>
+                <button onclick="restartGame()">TRY AGAIN</button>
+            </div>
+
+            <div id="mobile-controls">
+                <button id="btn-left" class="control-btn">⬅️</button>
+                <button id="btn-rotate" class="control-btn">🔄</button>
+                <button id="btn-down" class="control-btn">⬇️</button>
+                <button id="btn-right" class="control-btn">➡️</button>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="next-label">NEXT</div>
+            <canvas id="next" width="100" height="100"></canvas>
+            <div class="score-label">SCORE</div>
+            <div id="score">0</div>
+            <div class="level-label" style="margin-top: 20px; font-weight: bold;">SPEED</div>
+            <div id="level">1</div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

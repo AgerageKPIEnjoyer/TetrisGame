@@ -1,0 +1,199 @@
+body {
+   background-color: #202028;
+    /* Створюємо ефект сітки за допомогою CSS-градієнтів */
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px; /* Розмір клітинки фону */
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+    overflow: hidden; /* Щоб не було скролу, якщо трохи вилізе */
+}
+
+.wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.game-container {
+    position: relative; /* Щоб меню позиціонувалося відносно гри */
+}
+
+canvas {
+    border: 2px solid #fff;
+    background-color: #000;
+    image-rendering: pixelated; 
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    display: block;
+}
+
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.next-label, .score-label {
+    font-size: 24px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.score-label { margin-top: 30px; }
+
+#score, #level {
+    font-size: 36px;
+    font-weight: bold;
+    color: #FF0D72;
+}
+
+#level { color: #0DC2FF; }
+
+/* --- СТИЛІ ДЛЯ МЕНЮ --- */
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 240px; /* Ширина canvas + бордери */
+    height: 400px;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.hidden {
+    display: none !important;
+}
+
+h1 {
+    font-size: 40px;
+    margin: 0 0 20px 0;
+    color: #FFE138;
+    text-shadow: 2px 2px #FF0D72;
+}
+
+button {
+    background: transparent;
+    border: 2px solid #fff;
+    color: #fff;
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 150px;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #fff;
+    color: #000;
+    transform: scale(1.05);
+}
+
+#mobile-controls {
+    display: none;
+}
+
+/* Якщо ширина екрана менша за 600px (Мобільні) */
+/* 1. ПЛАНШЕТИ ТА МАЛІ НОУТБУКИ (до 900px) */
+@media (max-width: 900px) {
+    .wrapper {
+        justify-content: center;
+        /* ЗБІЛЬШУЄМО МАСШТАБ */
+        transform: scale(1.3); 
+        margin-top: 60px; /* Відсуваємо від верху, бо при збільшенні вона росте вгору теж */
+        gap: 40px; /* Більше простору між грою і панеллю */
+    }
+
+    /* Кнопки теж будуть збільшені разом з wrapper, але ми їх трохи підрівняємо */
+    #mobile-controls {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 25px;
+        width: 240px;
+    }
+
+    .control-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 2px solid #fff;
+        font-size: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        touch-action: manipulation;
+        padding: 0;
+        cursor: pointer;
+    }
+    
+    .control-btn:active {
+        background-color: #FF0D72;
+        transform: scale(0.95);
+    }
+}
+
+/* 2. СТАНДАРТНІ ТЕЛЕФОНИ (до 600px) */
+@media (max-width: 600px) {
+    .wrapper {
+        transform: scale(0.85); 
+        transform-origin: top center; 
+        /* ЗБІЛЬШИЛИ ВІДСТУП: Було 10px, стало 30px */
+        gap: 30px; 
+    }
+
+    .side-panel {
+        transform: scale(0.9);
+        transform-origin: top left;
+        /* ПРИБРАЛИ margin-left: -5px, тепер 0 */
+        margin-left: 0; 
+    }
+
+    .next-label, .score-label, .level-label { font-size: 18px; margin-bottom: 5px; }
+    #score, #level { font-size: 28px; }
+
+    .control-btn {
+        width: 55px;
+        height: 55px;
+    }
+}
+
+/* 3. ДУЖЕ МАЛІ ЕКРАНИ (до 380px) - iPhone SE */
+@media (max-width: 380px) {
+    .wrapper {
+        /* Трохи збільшимо масштаб з 0.7 до 0.75, щоб краще читалося */
+        transform: scale(0.75); 
+        /* ЗБІЛЬШИЛИ ВІДСТУП: Було gap: ? стало gap: 20px */
+        gap: 20px; 
+    }
+
+    .side-panel {
+        /* ВАЖЛИВО: Прибрали margin-left: -15px, яке ламало вигляд */
+        margin-left: 0;
+    }
+    
+    #mobile-controls {
+        gap: 8px;
+    }
+    
+    .control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+}
