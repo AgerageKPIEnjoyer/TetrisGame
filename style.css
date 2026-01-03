@@ -62,6 +62,13 @@ canvas {
     color: #FF0D72;
 }
 
+#high-score {
+    font-size: 36px;
+    font-weight: bold;
+    color: #FFE138; 
+    margin-bottom: 5px; 
+}
+
 #level { 
     color: #0DC2FF; 
 }
@@ -136,7 +143,7 @@ h1 {
 
 h2 {
     font-family: 'Press Start 2P', cursive;
-    font-size: 20px; 
+    font-size: 30px; 
     color: #FFE138;
     text-shadow: 2px 2px #FF0D72;
     text-align: center;
@@ -238,6 +245,23 @@ h2 {
 .controls-list ul {
     padding-left: 15px;
     margin: 5px 0;
+}
+
+
+.sound-btn-pos {
+    left: auto;
+    right: 10px;
+    top: 10px; 
+}
+
+
+.game-container.menu-mode #btn-sound {
+    top: 331px;        
+    right: auto;         
+    bottom: auto;     
+    left: 40px;    
+        
+    border-color: #FFE138; 
 }
 
 
